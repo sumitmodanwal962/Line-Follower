@@ -1,0 +1,129 @@
+#define IR_SENSOR_RIGHT 11
+#define IR_SENSOR_LEFT 12
+#define MOTOR_SPEED 145
+#define TURN_SPEED 210  // Higher speed for sharp turns
+
+// Right motor
+int enableRightMotor = 6;
+int rightMotorPin1 = 7;
+int rightMotorPin2 = 8;
+
+// Left motor
+int enableLeftMotor = 5;
+int leftMotorPin1 = 9;
+int leftMotorPin2 = 10;
+
+void setup()
+{
+  // Increase the frequency of PWM signal on pin D5 and D6 for smoother motor control
+  TCCR0B = TCCR0B & B11111000 | B00000010; // Frequency = 7812.5 Hz
+  
+  // Initialize motor control pins
+  pinMode(enableRightMotor, OUTPUT);
+  pinMode(rightMotorPin1, OUTPUT);
+  pinMode(rightMotorPin2, OUTPUT);
+  
+  pinMode(enableLeftMotor, OUTPUT);
+  pinMode(leftMotorPin1, OUTPUT);
+  pinMode(leftMotorPin2, OUTPUT);
+
+  // Initialize IR sensor pins
+  pinMode(IR_SENSOR_RIGHT, INPUT);
+  pinMode(IR_SENSOR_LEFT, INPUT);
+  
+  // Stop motors initially
+  rotateMotor(0, 0);
+}
+
+void loop()
+{
+  int rightIRSensorValue = digitalRead(IR_SENSOR_RIGHT);
+  int leftIRSensorValue = digitalRead(IR_SENSOR_LEFT);
+
+  // If none of the sensors detect black line, go straight
+  if (rightIRSensorValue == LOW && leftIRSensorValue == LOW)
+  {
+    rotateMotor(MOTOR_SPEED, MOTOR_SPEED);
+  }
+  // If right sensor detects black line, turn right
+  else if (rightIRSensorValue == HIGH && leftIRSensorValue == LOW)
+  {
+    rotateMotor(-TURN_SPEED, TURN_SPEED); 
+    delay(200);  // Adjust this for turn sharpness
+  }
+  // If left sensor detects black line, turn left
+  else if (rightIRSensorValue == LOW && leftIRSensorValue == HIGH)
+  {
+    rotateMotor(TURN_SPEED, -TURN_SPEED); 
+    delay(200);  // Adjust this for turn sharpness
+  }
+  // If both sensors detect black line, perform a sharper turn or stop
+  else if (rightIRSensorValue == HIGH && leftIRSensorValue == HIGH)
+  {
+    rotateMotor(-TURN_SPEED, TURN_SPEED); 
+    delay(300);  // Adjust for 90-degree turns
+  }
+  else 
+  {
+    rotateMotor(0, 0); // Stop if no clear action
+  }
+}
+
+// Function to rotate both motors to perform a 180-degree turn
+void perform180DegreeTurn()
+{
+  Serial.println("Performing 180-degree turn...");
+
+  // Stop motors momentarily before turning
+  rotateMotor(0, 0);
+  delay(200);
+
+  // Rotate the robot in place for 180 degrees
+  rotateMotor(-TURN_SPEED, TURN_SPEED); // Rotate right in place
+  delay(1000); // Adjust delay for precise 180-degree rotation (calibrate as needed)
+
+  // Stop motors after completing the turn
+  rotateMotor(0, 0);
+  delay(200);
+}
+
+void rotateMotor(int rightMotorSpeed, int leftMotorSpeed)
+{
+  // Right motor control
+  if (rightMotorSpeed < 0)
+  {
+    digitalWrite(rightMotorPin1, LOW);
+    digitalWrite(rightMotorPin2, HIGH);    
+  }
+  else if (rightMotorSpeed > 0)
+  {
+    digitalWrite(rightMotorPin1, HIGH);
+    digitalWrite(rightMotorPin2, LOW);      
+  }
+  else
+  {
+    digitalWrite(rightMotorPin1, LOW);
+    digitalWrite(rightMotorPin2, LOW);      
+  }
+
+  // Left motor control
+  if (leftMotorSpeed < 0)
+  {
+    digitalWrite(leftMotorPin1, LOW);
+    digitalWrite(leftMotorPin2, HIGH);    
+  }
+  else if (leftMotorSpeed > 0)
+  {
+    digitalWrite(leftMotorPin1, HIGH);
+    digitalWrite(leftMotorPin2, LOW);      
+  }
+  else 
+  {
+    digitalWrite(leftMotorPin1, LOW);
+    digitalWrite(leftMotorPin2, LOW);      
+  }
+  
+  // Set motor speeds
+  analogWrite(enableRightMotor, abs(rightMotorSpeed));
+  analogWrite(enableLeftMotor, abs(leftMotorSpeed));    
+}

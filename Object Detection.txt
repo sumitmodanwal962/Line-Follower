@@ -1,0 +1,119 @@
+// Right motor
+int enableRightMotor = 6;
+int rightMotorPin1 = 7;
+int rightMotorPin2 = 8;
+
+// Left motor
+int enableLeftMotor = 5;
+int leftMotorPin1 = 9;
+int leftMotorPin2 = 10;
+
+// Ultrasonic Sensor Pins
+#define TRIGGER_PIN A0
+#define ECHO_PIN A1
+
+// Speed for motors (0-255)
+int motorSpeed = 80;
+int semiCircleSpeed = 80; // Speed for semicircular movement
+int semiCircleTime = 2000; // Duration for semicircle in milliseconds
+
+void setup() {
+  // Initialize motor control pins as outputs
+  pinMode(enableRightMotor, OUTPUT);
+  pinMode(rightMotorPin1, OUTPUT);
+  pinMode(rightMotorPin2, OUTPUT);
+
+  pinMode(enableLeftMotor, OUTPUT);
+  pinMode(leftMotorPin1, OUTPUT);
+  pinMode(leftMotorPin2, OUTPUT);
+
+  // Initialize ultrasonic sensor pins
+  pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  // Initialize Serial for debugging
+  Serial.begin(9600);
+
+  // Start moving forward
+  moveForward();
+}
+
+void loop() {
+  // Measure distance using the ultrasonic sensor
+  float distance = measureDistance();
+
+  // Print the distance for debugging
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // If an object is detected within 15 cm, perform a semicircular motion
+  if (distance > 0 && distance <= 20) {
+    moveSemicircle();
+    moveForward(); // Resume moving forward after semicircle
+  }
+
+  delay(100); // Small delay for stable readings
+}
+
+// Function to move motors forward
+void moveForward() {
+  // Set Right Motor: Forward Direction
+  digitalWrite(rightMotorPin1, HIGH);
+  digitalWrite(rightMotorPin2, LOW);
+
+  // Set Left Motor: Forward Direction
+  digitalWrite(leftMotorPin1, HIGH);
+  digitalWrite(leftMotorPin2, LOW);
+
+  // Set Motor Speeds
+  analogWrite(enableRightMotor, motorSpeed);
+  analogWrite(enableLeftMotor, motorSpeed);
+}
+
+// Function to perform semicircular motion
+void moveSemicircle() {
+  // Stop the right motor and run the left motor for semicircular motion
+  digitalWrite(rightMotorPin1, LOW);
+  digitalWrite(rightMotorPin2, LOW);
+
+  digitalWrite(leftMotorPin1, HIGH);
+  digitalWrite(leftMotorPin2, LOW);
+
+  analogWrite(enableRightMotor, 0);          // Stop right motor
+  analogWrite(enableLeftMotor, semiCircleSpeed); // Left motor continues
+
+  delay(semiCircleTime); // Time for the semicircular motion
+
+  // Stop both motors after semicircle
+  stopMotors();
+}
+
+// Function to stop all motors
+void stopMotors() {
+  digitalWrite(rightMotorPin1, LOW);
+  digitalWrite(rightMotorPin2, LOW);
+  digitalWrite(leftMotorPin1, LOW);
+  digitalWrite(leftMotorPin2, LOW);
+
+  analogWrite(enableRightMotor, 0);
+  analogWrite(enableLeftMotor, 0);
+}
+
+// Function to measure distance using ultrasonic sensor
+float measureDistance() {
+  // Send a 10-microsecond pulse to the trigger pin
+  digitalWrite(TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
+
+  // Measure the duration of the echo pulse
+  long duration = pulseIn(ECHO_PIN, HIGH);
+
+  // Convert the duration to distance (in cm)
+  float distance = (duration / 2.0) * 0.0343;
+
+  return distance;
+}
